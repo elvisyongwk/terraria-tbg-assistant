@@ -4,7 +4,6 @@ import enemies from "../data/enemies.json";
 import DiceSelector from "../components/DiceSelector";
 import EnemyHPBar from "../components/EnemyHPBar";
 import CombatTimeline from "../components/CombatTimeline";
-import DiceRoller from "../components/DiceRoller";
 import RewardScreen from "../components/RewardScreen";
 
 import {
@@ -16,6 +15,7 @@ import {
 import { useSessionStore } from "../store/sessionStore";
 import type { DiceType } from "../types/Dice";
 import type { Enemy } from "../types/Enemy";
+import DiceRenderer from "../components/dice/DiceRenderer";
 
 type Phase =
   | "selectEnemy"
@@ -239,7 +239,7 @@ export default function FightPage() {
       )}
 
       {phase === "rollingPlayer" && (
-        <DiceRoller
+        <DiceRenderer
           dice={expandDicePool(playerDice)}
           onComplete={onPlayerRollComplete}
         />
@@ -265,7 +265,7 @@ export default function FightPage() {
       )}
 
       {phase === "rollingRetaliation" && (
-        <DiceRoller
+        <DiceRenderer
           dice={expandDicePool(playerDice)}
           onComplete={onRetaliationRollComplete}
         />
@@ -273,7 +273,7 @@ export default function FightPage() {
 
       {/* ---------------- ENEMY ATTACK ---------------- */}
       {phase === "enemyAttack" && (
-        <DiceRoller
+        <DiceRenderer
           dice={expandDicePool(playerDice)}
           onComplete={onEnemyAttackComplete}
         />

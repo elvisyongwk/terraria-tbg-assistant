@@ -120,6 +120,7 @@ button:hover {
   background: var(--panel);
   border-radius: 16px;
   border: 1px solid var(--border);
+  overflow: hidden;
 }
 
 .dice-row {

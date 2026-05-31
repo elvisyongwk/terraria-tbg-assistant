@@ -6,7 +6,7 @@ interface Props {
   onComplete: (results: number[]) => void;
 }
 
-export default function DiceRoller({
+export default function DiceRoller2D({
   dice,
   onComplete,
 }: Props) {
