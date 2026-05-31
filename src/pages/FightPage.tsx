@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import enemies from "../data/enemies.json";
 
 import EnemyHPBar from "../components/EnemyHPBar";
@@ -47,6 +48,7 @@ function expandDicePool(pool: Record<DiceType, number>): DiceType[] {
 
 export default function FightPage() {
     const addHistory = useSessionStore((s) => s.addHistory);
+    const navigate = useNavigate();
 
     const [phase, setPhase] = useState<Phase>("selectEnemy");
 
@@ -266,8 +268,7 @@ export default function FightPage() {
         setEvents([]);
         setPhase("selectEnemy");
 
-        // if you use router, you can navigate here
-        // navigate("/session");
+        navigate("/session");
     }
 
     /* ---------------- RENDER ---------------- */
@@ -282,6 +283,10 @@ export default function FightPage() {
                         {e.name}
                     </button>
                 ))}
+
+                <button onClick={exitToSession}>
+                    Return to Session
+                </button>
             </div>
         );
     }
@@ -318,6 +323,12 @@ export default function FightPage() {
                     }
                 >
                     Start Fight
+                </button>
+
+                <button onClick={() => setPhase("selectEnemy")}>Choose another enemy</button>
+
+                <button onClick={exitToSession}>
+                    Return to Session
                 </button>
             </div>
         );
