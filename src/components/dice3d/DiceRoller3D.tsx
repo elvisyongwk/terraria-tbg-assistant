@@ -5,11 +5,13 @@ import DiceScene from "./DiceScene";
 interface Props {
   dice: DiceType[];
   onComplete: (results: number[]) => void;
+  role?: "player" | "enemy";
 }
 
 export default function DiceRoller3D({
   dice,
   onComplete,
+  role
 }: Props) {
   const [rolling, setRolling] = useState(true);
   const [values, setValues] = useState<number[]>([]);
@@ -63,6 +65,7 @@ export default function DiceRoller3D({
       <DiceScene
         values={values}
         rolling={rolling}
+        role={role}
       />
     </div>
   );

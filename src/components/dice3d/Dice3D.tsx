@@ -7,7 +7,7 @@ interface Props {
   rolling: boolean;
 }
 
-export default function Dice3D({ value, rolling }: Props) {
+export default function Dice3D({ value, rolling, color }: Props & { color: string }) {
   const meshRef = useRef<THREE.Mesh>(null);
 
   const rotationSpeed = useRef({
@@ -57,7 +57,7 @@ export default function Dice3D({ value, rolling }: Props) {
       <boxGeometry args={[1, 1, 1]} />
 
       <meshStandardMaterial
-        color="#6ea8fe"
+        color={color}
         roughness={0.3}
         metalness={0.2}
       />

@@ -5,9 +5,11 @@ import Dice3D from "./Dice3D";
 export default function DiceScene({
   values,
   rolling,
+  role
 }: {
   values: number[];
   rolling: boolean;
+  role?: "player" | "enemy";
 }) {
   return (
     <div style={{ height: 200 }}>
@@ -26,7 +28,7 @@ export default function DiceScene({
               0,
             ]}
           >
-            <Dice3D value={v} rolling={rolling} />
+            <Dice3D value={v} rolling={rolling} color={role === "player" ? "blue" : "red"} />
           </group>
         ))}
       </Canvas>

@@ -4,11 +4,13 @@ import { DICE_SIDES, type DiceType } from "../types/Dice";
 interface Props {
   dice: DiceType[];
   onComplete: (results: number[]) => void;
+  role?: "player" | "enemy";
 }
 
 export default function DiceRoller2D({
   dice,
   onComplete,
+  role
 }: Props) {
   const [values, setValues] = useState<number[]>([]);
   const [rolling, setRolling] = useState(true);
@@ -61,7 +63,11 @@ export default function DiceRoller2D({
 
       <div className="dice-row">
         {values.map((v, i) => (
-          <div key={i} className="die">
+          <div
+            key={i}
+            className={`die ${role === "enemy" ? "enemy-die" : "player-die"
+              }`}
+          >
             {v}
           </div>
         ))}
