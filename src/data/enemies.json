@@ -1,0 +1,38 @@
+[
+  {
+    "id": "blue_slime",
+    "name": "Blue Slime",
+    "hp": 2,
+    "range": "short",
+    "attackDice": [],
+    "defenseDice": ["D4"],
+    "rewards": ["slime_gel"]
+  },
+  {
+    "id": "green_slime",
+    "name": "Green Slime",
+    "hp": 3,
+    "range": "short",
+    "attackDice": [],
+    "defenseDice": ["D6"],
+    "rewards": ["slime_gel"]
+  },
+  {
+    "id": "goblin_archer",
+    "name": "Goblin Archer",
+    "hp": 3,
+    "range": "medium",
+    "attackDice": ["D6"],
+    "defenseDice": ["D4", "D4"],
+    "rewards": ["gold_pouch"]
+  },
+  {
+    "id": "orc_warrior",
+    "name": "Orc Warrior",
+    "hp": 5,
+    "range": "short",
+    "attackDice": ["D8"],
+    "defenseDice": ["D6", "D6"],
+    "rewards": ["orc_trophy"]
+  }
+]

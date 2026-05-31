@@ -1,0 +1,191 @@
+:root {
+  --bg: #0b0f19;
+  --panel: #121a2a;
+  --panel-2: #1a2440;
+
+  --text: #e8ecff;
+  --muted: #9aa4c7;
+
+  --accent: #6ea8fe;
+  --danger: #ff4d6d;
+  --success: #2ee59d;
+
+  --border: rgba(255, 255, 255, 0.08);
+}
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui;
+  background: radial-gradient(
+      circle at top,
+      #121a2a,
+      var(--bg)
+    );
+  color: var(--text);
+}
+
+.page {
+  max-width: 900px;
+  margin: auto;
+  padding: 24px;
+}
+
+h1, h2, h3 {
+  margin: 8px 0;
+}
+
+button {
+  padding: 10px 14px;
+  margin: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+}
+
+.card {
+  background: linear-gradient(
+    145deg,
+    var(--panel),
+    var(--panel-2)
+  );
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+  margin: 10px 0;
+}
+
+/* Combat Timeline */
+.timeline {
+  background: var(--panel);
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+}
+
+/* HP BAR */
+.hp-bar {
+  width: 100%;
+  height: 14px;
+  background: #1a1f2e;
+  border-radius: 999px;
+  overflow: hidden;
+  margin: 10px 0;
+}
+
+.hp-fill {
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--danger),
+    #ff7a7a
+  );
+  transition: width 0.4s ease;
+}
+
+/* Dice Grid */
+.dice-grid {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.dice-box {
+  width: 90px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  text-align: center;
+}
+
+/* Reward */
+.reward {
+  background: var(--panel);
+  border-radius: 16px;
+  padding: 20px;
+  border: 1px solid var(--border);
+}
+
+.dice-roll {
+  text-align: center;
+  padding: 20px;
+  background: var(--panel);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+}
+
+.dice-row {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.die {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: linear-gradient(
+    145deg,
+    #1f2a44,
+    #121a2a
+  );
+
+  border: 1px solid var(--border);
+  border-radius: 10px;
+
+  font-size: 18px;
+  font-weight: bold;
+
+  animation: pop 0.2s ease;
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.7) rotate(-10deg);
+    opacity: 0.3;
+  }
+  100% {
+    transform: scale(1) rotate(0);
+    opacity: 1;
+  }
+}
+
+.enemy-btn {
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  transition: 0.2s;
+}
+
+.enemy-btn:hover {
+  border-color: var(--accent);
+  transform: translateX(4px);
+}
+
+.reward ul {
+  list-style: none;
+  padding: 0;
+}
+
+.reward li {
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-2);
+}
