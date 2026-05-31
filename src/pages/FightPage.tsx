@@ -23,11 +23,14 @@ type Phase =
     | "setupEnemy"
     | "playerAttack"
     | "rollingPlayer"
+    | "rollingEnemyDefense"
     | "viewingPlayerResults"
     | "retaliationCheck"
     | "rollingRetaliation"
+    | "rollingEnemyRetaliation"
     | "viewingRetaliationResults"
     | "enemyAttack"
+    | "rollingEnemyAttack"
     | "viewingEnemyAttackResults"
     | "reward";
 
@@ -67,7 +70,9 @@ export default function FightPage() {
 
     const [events, setEvents] = useState<CombatEvent[]>([]);
 
-    const [lastRollValues, setLastRollValues] = useState<number[]>([]);
+    const [lastRollValues, setLastRollValues] = useState<{ player: number[], enemy: number[] }>({ player: [], enemy: [] });
+    const [playerAttackRolls, setPlayerAttackRolls] = useState<number[]>([]);
+    const [playerDefenseRolls, setPlayerDefenseRolls] = useState<number[]>([]);
 
     function log(event: CombatEvent) {
         setEvents((prev) => [...prev, event]);
@@ -94,18 +99,29 @@ export default function FightPage() {
     function onPlayerRollComplete(playerRolls: number[]) {
         if (!enemy) return;
 
-        const res = resolvePlayerAttack(
-            playerRolls,
-            enemy.defenseDice
-        );
+        log({ type: "roll", label: "Player Rolls", values: playerRolls });
+        setPlayerAttackRolls(playerRolls);
+        setPhase("rollingEnemyDefense");
+    }
 
-        const newHp = Math.max(0, enemyHp - res.damage);
+    function onEnemyDefenseRollComplete(enemyDefenseRolls: number[]) {
+        if (!enemy) return;
+
+        const threshold = Math.max(...enemyDefenseRolls);
+        let damage = 0;
+
+        for (const roll of playerAttackRolls) {
+            if (roll >= threshold) {
+                damage++;
+            }
+        }
+
+        const newHp = Math.max(0, enemyHp - damage);
         setEnemyHp(newHp);
 
-        log({ type: "roll", label: "Player Rolls", values: playerRolls });
-        log({ type: "roll", label: "Enemy Defense", values: res.enemyRolls });
-        log({ type: "damage", label: "Damage Dealt", value: res.damage });
-        setLastRollValues(playerRolls);
+        log({ type: "roll", label: "Enemy Defense", values: enemyDefenseRolls });
+        log({ type: "damage", label: "Damage Dealt", value: damage });
+        setLastRollValues({ player: playerAttackRolls, enemy: enemyDefenseRolls });
         setPhase("viewingPlayerResults");
     }
 
@@ -149,24 +165,36 @@ export default function FightPage() {
     function onRetaliationRollComplete(playerDefenseRolls: number[]) {
         if (!enemy) return;
 
-        const res = resolveRetaliation(
-            enemy.defenseDice,
-            playerDefenseRolls
-        );
+        log({
+            type: "roll",
+            label: "Player Defense",
+            values: playerDefenseRolls,
+        });
+
+        setPlayerDefenseRolls(playerDefenseRolls);
+        setPhase("rollingEnemyRetaliation");
+    }
+
+    function onEnemyRetaliationRollComplete(enemyRetaliationRolls: number[]) {
+        if (!enemy) return;
+
+        const playerDefense = Math.max(...playerDefenseRolls);
+        const enemyAttack = Math.max(...enemyRetaliationRolls);
+        const playerTakesDamage = enemyAttack > playerDefense;
 
         log({
             type: "roll",
             label: "Enemy Retaliation Rolls",
-            values: res.enemyRolls,
+            values: enemyRetaliationRolls,
         });
 
-        if (res.playerTakesDamage) {
+        if (playerTakesDamage) {
             log({ type: "damage", label: "Player Takes Damage", value: 1 });
         } else {
             log({ type: "state", label: "Player blocks retaliation" });
         }
 
-        setLastRollValues(playerDefenseRolls);
+        setLastRollValues({ player: playerDefenseRolls, enemy: enemyRetaliationRolls });
         setPhase("viewingRetaliationResults");
     }
 
@@ -192,24 +220,36 @@ export default function FightPage() {
     function onEnemyAttackComplete(playerDefenseRolls: number[]) {
         if (!enemy) return;
 
-        const res = resolveEnemyAttack(
-            enemy.attackDice,
-            playerDefenseRolls
-        );
+        log({
+            type: "roll",
+            label: "Player Defense",
+            values: playerDefenseRolls,
+        });
+
+        setPlayerDefenseRolls(playerDefenseRolls);
+        setPhase("rollingEnemyAttack");
+    }
+
+    function onEnemyAttackRollComplete(enemyAttackRolls: number[]) {
+        if (!enemy) return;
+
+        const playerDefense = Math.max(...playerDefenseRolls);
+        const enemyAttack = Math.max(...enemyAttackRolls);
+        const playerTakesDamage = enemyAttack > playerDefense;
 
         log({
             type: "roll",
             label: "Enemy Attack Rolls",
-            values: res.enemyRolls,
+            values: enemyAttackRolls,
         });
 
-        if (res.playerTakesDamage) {
+        if (playerTakesDamage) {
             log({ type: "damage", label: "Player Takes Damage", value: 1 });
         } else {
             log({ type: "state", label: "Attack blocked" });
         }
 
-        setLastRollValues(playerDefenseRolls);
+        setLastRollValues({ player: playerDefenseRolls, enemy: enemyAttackRolls });
         setPhase("viewingEnemyAttackResults");
     }
 
@@ -327,13 +367,31 @@ export default function FightPage() {
                 />
             )}
 
+            {phase === "rollingEnemyDefense" && (
+                <DiceRenderer
+                    dice={enemy?.defenseDice || []}
+                    onComplete={onEnemyDefenseRollComplete}
+                    role="enemy"
+                />
+            )}
+
             {phase === "viewingPlayerResults" && (
                 <>
                     <div className="dice-roll">
-                        <h3>Result</h3>
+                        <h3>Player Attack</h3>
                         <div className="dice-row">
-                            {lastRollValues.map((v, i) => (
+                            {lastRollValues.player.map((v, i) => (
                                 <div key={i} className="die player-die">
+                                    {v}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="dice-roll">
+                        <h3>Enemy Defense</h3>
+                        <div className="dice-row">
+                            {lastRollValues.enemy.map((v, i) => (
+                                <div key={i} className="die enemy-die">
                                     {v}
                                 </div>
                             ))}
@@ -368,13 +426,31 @@ export default function FightPage() {
                 />
             )}
 
+            {phase === "rollingEnemyRetaliation" && (
+                <DiceRenderer
+                    dice={enemy?.defenseDice || []}
+                    onComplete={onEnemyRetaliationRollComplete}
+                    role="enemy"
+                />
+            )}
+
             {phase === "viewingRetaliationResults" && (
                 <>
                     <div className="dice-roll">
-                        <h3>Result</h3>
+                        <h3>Player Defense</h3>
                         <div className="dice-row">
-                            {lastRollValues.map((v, i) => (
+                            {lastRollValues.player.map((v, i) => (
                                 <div key={i} className="die player-die">
+                                    {v}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="dice-roll">
+                        <h3>Enemy Retaliation</h3>
+                        <div className="dice-row">
+                            {lastRollValues.enemy.map((v, i) => (
+                                <div key={i} className="die enemy-die">
                                     {v}
                                 </div>
                             ))}
@@ -391,6 +467,14 @@ export default function FightPage() {
                 <DiceRenderer
                     dice={expandDicePool(playerDice)}
                     onComplete={onEnemyAttackComplete}
+                    role="player"
+                />
+            )}
+
+            {phase === "rollingEnemyAttack" && (
+                <DiceRenderer
+                    dice={enemy?.attackDice || []}
+                    onComplete={onEnemyAttackRollComplete}
                     role="enemy"
                 />
             )}
@@ -398,9 +482,19 @@ export default function FightPage() {
             {phase === "viewingEnemyAttackResults" && (
                 <>
                     <div className="dice-roll">
-                        <h3>Result</h3>
+                        <h3>Player Defense</h3>
                         <div className="dice-row">
-                            {lastRollValues.map((v, i) => (
+                            {lastRollValues.player.map((v, i) => (
+                                <div key={i} className="die player-die">
+                                    {v}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="dice-roll">
+                        <h3>Enemy Attack</h3>
+                        <div className="dice-row">
+                            {lastRollValues.enemy.map((v, i) => (
                                 <div key={i} className="die enemy-die">
                                     {v}
                                 </div>
