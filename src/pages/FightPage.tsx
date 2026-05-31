@@ -23,9 +23,12 @@ type Phase =
     | "setupEnemy"
     | "playerAttack"
     | "rollingPlayer"
+    | "viewingPlayerResults"
     | "retaliationCheck"
     | "rollingRetaliation"
+    | "viewingRetaliationResults"
     | "enemyAttack"
+    | "viewingEnemyAttackResults"
     | "reward";
 
 type CombatEvent =
@@ -64,6 +67,8 @@ export default function FightPage() {
 
     const [events, setEvents] = useState<CombatEvent[]>([]);
 
+    const [lastRollValues, setLastRollValues] = useState<number[]>([]);
+
     function log(event: CombatEvent) {
         setEvents((prev) => [...prev, event]);
     }
@@ -100,14 +105,20 @@ export default function FightPage() {
         log({ type: "roll", label: "Player Rolls", values: playerRolls });
         log({ type: "roll", label: "Enemy Defense", values: res.enemyRolls });
         log({ type: "damage", label: "Damage Dealt", value: res.damage });
+        setLastRollValues(playerRolls);
+        setPhase("viewingPlayerResults");
+    }
 
-        if (newHp <= 0) {
+    function continueFromPlayerResults() {
+        if (!enemy) return;
+
+        if (enemyHp <= 0) {
             addHistory({
                 id: crypto.randomUUID(),
                 timestamp: new Date().toISOString(),
                 enemyName: enemy.name,
                 action: "fight",
-                damageDealt: res.damage,
+                damageDealt: 0,
                 enemyKilled: true,
                 enemyRetaliated: false,
                 playerDamaged: false,
@@ -155,6 +166,13 @@ export default function FightPage() {
             log({ type: "state", label: "Player blocks retaliation" });
         }
 
+        setLastRollValues(playerDefenseRolls);
+        setPhase("viewingRetaliationResults");
+    }
+
+    function continueFromRetaliationResults() {
+        if (!enemy) return;
+
         addHistory({
             id: crypto.randomUUID(),
             timestamp: new Date().toISOString(),
@@ -163,7 +181,7 @@ export default function FightPage() {
             damageDealt: 0,
             enemyKilled: false,
             enemyRetaliated: true,
-            playerDamaged: res.playerTakesDamage,
+            playerDamaged: false,
         });
 
         setPhase("reward");
@@ -191,6 +209,11 @@ export default function FightPage() {
             log({ type: "state", label: "Attack blocked" });
         }
 
+        setLastRollValues(playerDefenseRolls);
+        setPhase("viewingEnemyAttackResults");
+    }
+
+    function continueFromEnemyAttackResults() {
         setPhase("reward");
     }
 
@@ -304,6 +327,24 @@ export default function FightPage() {
                 />
             )}
 
+            {phase === "viewingPlayerResults" && (
+                <>
+                    <div className="dice-roll">
+                        <h3>Result</h3>
+                        <div className="dice-row">
+                            {lastRollValues.map((v, i) => (
+                                <div key={i} className="die player-die">
+                                    {v}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <button onClick={continueFromPlayerResults}>
+                        Continue
+                    </button>
+                </>
+            )}
+
             {/* ---------------- RETALIATION CHECK ---------------- */}
             {phase === "retaliationCheck" && (
                 <>
@@ -327,6 +368,24 @@ export default function FightPage() {
                 />
             )}
 
+            {phase === "viewingRetaliationResults" && (
+                <>
+                    <div className="dice-roll">
+                        <h3>Result</h3>
+                        <div className="dice-row">
+                            {lastRollValues.map((v, i) => (
+                                <div key={i} className="die player-die">
+                                    {v}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <button onClick={continueFromRetaliationResults}>
+                        Continue
+                    </button>
+                </>
+            )}
+
             {/* ---------------- ENEMY ATTACK ---------------- */}
             {phase === "enemyAttack" && (
                 <DiceRenderer
@@ -334,6 +393,24 @@ export default function FightPage() {
                     onComplete={onEnemyAttackComplete}
                     role="enemy"
                 />
+            )}
+
+            {phase === "viewingEnemyAttackResults" && (
+                <>
+                    <div className="dice-roll">
+                        <h3>Result</h3>
+                        <div className="dice-row">
+                            {lastRollValues.map((v, i) => (
+                                <div key={i} className="die enemy-die">
+                                    {v}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <button onClick={continueFromEnemyAttackResults}>
+                        Continue
+                    </button>
+                </>
             )}
 
             {/* ---------------- REWARD ---------------- */}
