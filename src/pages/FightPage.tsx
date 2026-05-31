@@ -1,7 +1,6 @@
 import { useState } from "react";
 import enemies from "../data/enemies.json";
 
-import DiceSelector from "../components/DiceSelector";
 import EnemyHPBar from "../components/EnemyHPBar";
 import CombatTimeline from "../components/CombatTimeline";
 import RewardScreen from "../components/RewardScreen";
@@ -16,6 +15,8 @@ import { useSessionStore } from "../store/sessionStore";
 import type { DiceType } from "../types/Dice";
 import type { Enemy } from "../types/Enemy";
 import DiceRenderer from "../components/dice/DiceRenderer";
+import DicePoolSelector from "../components/DicePoolSelector";
+import DicePoolPreset from "../components/DicePoolPresets";
 
 type Phase =
     | "selectEnemy"
@@ -63,8 +64,6 @@ export default function FightPage() {
 
     const [events, setEvents] = useState<CombatEvent[]>([]);
 
-    const [pending, setPending] = useState<"player" | "retaliation" | "enemy" | null>(null);
-
     function log(event: CombatEvent) {
         setEvents((prev) => [...prev, event]);
     }
@@ -84,7 +83,6 @@ export default function FightPage() {
     /* ---------------- PLAYER ATTACK ---------------- */
 
     function startPlayerAttack() {
-        setPending("player");
         setPhase("rollingPlayer");
     }
 
@@ -96,7 +94,7 @@ export default function FightPage() {
             enemy.defenseDice
         );
 
-        const newHp = enemyHp - res.damage;
+        const newHp = Math.max(0, enemyHp - res.damage);
         setEnemyHp(newHp);
 
         log({ type: "roll", label: "Player Rolls", values: playerRolls });
@@ -134,7 +132,6 @@ export default function FightPage() {
             return;
         }
 
-        setPending("retaliation");
         setPhase("rollingRetaliation");
     }
 
@@ -282,7 +279,13 @@ export default function FightPage() {
             {/* ---------------- PLAYER ATTACK ---------------- */}
             {phase === "playerAttack" && (
                 <>
-                    <DiceSelector
+                    <DicePoolPreset
+                        onSelect={(preset) =>
+                            setPlayerDice(preset)
+                        }
+                    />
+
+                    <DicePoolSelector
                         value={playerDice}
                         onChange={setPlayerDice}
                     />
