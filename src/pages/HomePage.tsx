@@ -8,7 +8,8 @@ export default function HomePage() {
   return (
     <div className="page">
       <h1>Terraria</h1>
-      <h2>The Board Game Assistant</h2>
+      <h2>The Board Game</h2>
+      <h3>Assistant Tool</h3>
 
       <div className="button-row main-menu">
         <button className="main-menu-button" onClick={() => navigate("/fight")}>Fight</button>
