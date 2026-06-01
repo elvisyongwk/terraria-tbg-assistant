@@ -24,6 +24,14 @@ export default function EnemyAttackPage() {
   const navigate = useNavigate();
   const toast = useToast();
 
+  function getSourceFromLabel(label: string, type?: CombatEvent["type"]): "player" | "enemy" | "system" {
+    const lower = label.toLowerCase();
+    if (lower.includes("player")) return "player";
+    if (lower.includes("enemy")) return "enemy";
+    if (type === "damage") return "player";
+    return "system";
+  }
+
   function handleComplete(
     enemyAttackRolls: number[],
     playerDefenseRolls: number[]
@@ -39,21 +47,22 @@ export default function EnemyAttackPage() {
         ...prev,
         { type: "damage", label: "Enemy Attack Damage", value: damage },
       ]);
-      toast.show(`Enemy hits player for ${damage} damage.`, "damage");
+      toast.show(`Enemy hits player for ${damage} damage.`, "damage", "enemy");
     } else {
       setResultMessage("Player blocks the enemy attack.");
-      toast.show("Player blocks the enemy attack.", "state");
+      toast.show("Player blocks the enemy attack.", "state", "player");
     }
   }
 
   function handleLog(event: CombatEvent) {
     setEvents((prev) => [...prev, event]);
+    const source = getSourceFromLabel(event.label, event.type);
     if (event.type === "damage") {
-      toast.show(event.label + ": " + event.value, "damage");
+      toast.show(event.label + ": " + event.value, "damage", source);
     } else if (event.type === "roll") {
-      toast.show(event.label + ": " + event.values.join(", "), "roll");
+      toast.show(event.label + ": " + event.values.join(", "), "roll", source);
     } else if (event.type === "state") {
-      toast.show(event.label, "state");
+      toast.show(event.label, "state", source);
     }
   }
 

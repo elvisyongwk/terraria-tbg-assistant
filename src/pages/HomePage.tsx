@@ -7,12 +7,13 @@ export default function HomePage() {
 
   return (
     <div className="page">
-      <h1>Terraria TBG Helper</h1>
+      <h1>Terraria</h1>
+      <h2>The Board Game Assistant</h2>
 
-      <div className="button-row">
-        <button onClick={() => navigate("/fight")}>Fight</button>
-        <button onClick={() => navigate("/enemy-attack")}>Enemy Attack</button>
-        <button onClick={() => navigate("/history")}>History</button>
+      <div className="button-row main-menu">
+        <button className="main-menu-button" onClick={() => navigate("/fight")}>Fight</button>
+        <button className="main-menu-button" onClick={() => navigate("/enemy-attack")}>Enemy Attack</button>
+        <button className="main-menu-button" onClick={() => navigate("/history")}>History</button>
       </div>
 
       <div className="card">

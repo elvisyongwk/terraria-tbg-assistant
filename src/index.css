@@ -1,14 +1,20 @@
 :root {
-  --bg: #0b0f19;
-  --panel: #121a2a;
-  --panel-2: #1a2440;
+  --bg: #081317;
+  --panel: #11262e;
+  --panel-2: #1f3e4f;
+  --panel-accent: #244c37;
 
-  --text: #e8ecff;
-  --muted: #9aa4c7;
+  --text: #e8f8f4;
+  --muted: #9fbbc3;
 
-  --accent: #6ea8fe;
+  --accent: #5af7a2;
   --danger: #ff4d6d;
-  --success: #2ee59d;
+  --accent-border: rgba(90, 247, 162, 0.4);
+  --accent-bg: rgba(90, 247, 162, 0.12);
+
+  --grass: #4bbf49;
+  --sky: #62d9ff;
+  --dirt: #6b4f2f;
 
   --border: rgba(255, 255, 255, 0.08);
 }
@@ -16,11 +22,7 @@
 body {
   margin: 0;
   font-family: ui-sans-serif, system-ui;
-  background: radial-gradient(
-      circle at top,
-      #121a2a,
-      var(--bg)
-    );
+  background: radial-gradient(circle at top, #16364f, var(--bg));
   color: var(--text);
 }
 
@@ -28,10 +30,34 @@ body {
   max-width: 900px;
   margin: auto;
   padding: 24px;
+  background: linear-gradient(180deg, rgba(29, 65, 93, 0.9), rgba(11, 19, 24, 0.95));
+  border: 1px solid rgba(97, 185, 168, 0.12);
+  border-radius: 24px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.30);
 }
 
 h1, h2, h3 {
   margin: 8px 0;
+}
+
+h1 {
+  color: var(--accent);
+  text-shadow: 0 0 18px rgba(90, 247, 162, 0.30);
+}
+
+h1, h2, h3 {
+  margin: 8px 0;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 8px #fbbf24;
+  }
+  50% {
+    opacity: 0.3;
+    box-shadow: 0 0 2px #fbbf24;
+  }
 }
 
 button {
@@ -48,6 +74,40 @@ button {
 button:hover {
   transform: translateY(-2px);
   border-color: var(--accent);
+}
+
+.button-row.main-menu {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin: 24px 0;
+}
+
+.main-menu-button {
+  min-width: 150px;
+  padding: 18px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
+  background: linear-gradient(135deg, #4eaa51, #8fd882 24%, #3f8e5a);
+  color: #fff;
+  box-shadow: 0 16px 36px rgba(33, 117, 78, 0.28);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s, border-color 0.2s;
+}
+
+.main-menu-button:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 20px 44px rgba(33, 117, 78, 0.35);
+  filter: brightness(1.08);
+  border-color: rgba(90, 247, 162, 0.6);
+}
+
+.main-menu-button:focus-visible {
+  outline: 3px solid rgba(90, 247, 162, 0.85);
+  outline-offset: 3px;
 }
 
 .card {
@@ -98,22 +158,51 @@ button:hover {
 
 /* HP BAR */
 .hp-bar {
+  position: relative;
   width: 100%;
-  height: 14px;
-  background: #1a1f2e;
+  height: 18px;
+  background: linear-gradient(135deg, #11282f, #173a45);
   border-radius: 999px;
   overflow: hidden;
   margin: 10px 0;
+  border: 2px solid #2c5f43;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 20px rgba(255, 77, 109, 0.1);
+}
+
+.hp-bar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.12), transparent 25%);
+  pointer-events: none;
 }
 
 .hp-fill {
+  position: relative;
   height: 100%;
-  background: linear-gradient(
-    90deg,
-    var(--danger),
-    #ff7a7a
+  width: 0;
+  background: linear-gradient(90deg, #ff7a7a 0%, var(--danger) 45%, #d3334f 100%);
+  box-shadow: inset 0 0 12px rgba(255, 77, 109, 0.35),
+    0 0 18px rgba(255, 77, 109, 0.18);
+  transition: width 0.4s ease, background-position 0.4s ease;
+  background-size: 200% 100%;
+}
+
+.hp-fill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0,
+    rgba(255, 255, 255, 0.08) 2px,
+    transparent 2px,
+    transparent 4px
   );
-  transition: width 0.4s ease;
+  opacity: 0.8;
+  pointer-events: none;
 }
 
 /* Dice Grid */

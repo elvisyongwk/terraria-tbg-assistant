@@ -52,6 +52,14 @@ export default function FightPage() {
     const navigate = useNavigate();
     const toast = useToast();
 
+    function getSourceFromLabel(label: string, type?: CombatEvent["type"]): "player" | "enemy" | "system" {
+      const lower = label.toLowerCase();
+      if (lower.includes("player")) return "player";
+      if (lower.includes("enemy")) return "enemy";
+      if (type === "damage") return "player";
+      return "system";
+    }
+
     const [phase, setPhase] = useState<Phase>("selectEnemy");
 
     const [enemy, setEnemy] = useState<Enemy | null>(null);
@@ -90,12 +98,13 @@ export default function FightPage() {
     function log(event: CombatEvent) {
         setEvents((prev) => [...prev, event]);
         try {
+            const source = getSourceFromLabel(event.label, event.type);
             if (event.type === "damage") {
-                toast.show(`${event.label}: ${event.value}`, "damage");
+                toast.show(`${event.label}: ${event.value}`, "damage", source);
             } else if (event.type === "roll") {
-                toast.show(`${event.label}: ${event.values.join(", ")}`, "roll");
+                toast.show(`${event.label}: ${event.values.join(", ")}`, "roll", source);
             } else if (event.type === "state") {
-                toast.show(event.label, "state");
+                toast.show(event.label, "state", source);
             }
         } catch (e) {
             // ignore if no provider
