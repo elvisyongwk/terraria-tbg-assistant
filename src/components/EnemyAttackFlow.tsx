@@ -5,6 +5,7 @@ import type { CombatEvent } from "../types/CombatEvent";
 import DiceLoadoutCard from "./combat/DiceLoadoutCard";
 import ResultDiceRow from "./combat/ResultDiceRow";
 import DiceRenderer from "./dice/DiceRenderer";
+import DiceIcon from "./DiceIcon";
 
 interface Props {
   enemyAttackDice: DiceType[];
@@ -171,12 +172,41 @@ export default function EnemyAttackFlow({
         <button className="attack-button" onClick={startEnemyAttack}>Start Enemy Attack</button>
       )}
 
-      {phase !== "viewingResults" && (
-        <DiceLoadoutCard
-          value={playerDefenseDice}
-          onChange={onPlayerDefenseDiceChange}
-          title="Defense Loadout"
-        />
+      {phase === "idle" && (
+        <>
+          <div className="loadout-card">
+            <h3>⚔️ Current Defense Loadout</h3>
+
+            <div className="dice-badges">
+              {Object.entries(playerDefenseDice)
+                .filter(([, count]) => count > 0)
+                .map(([type, count]) => (
+                  <div
+                    key={type}
+                    className={`dice-tile ${type.toLowerCase()}`}
+                  >
+                    <DiceIcon
+                      type={type as any}
+                      size={48}
+                    />
+
+                    <div className="dice-label">
+                      {type}
+                    </div>
+
+                    <div className="dice-count">
+                      × {count}
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+          <DiceLoadoutCard
+            value={playerDefenseDice}
+            onChange={onPlayerDefenseDiceChange}
+            title="Defense Loadout"
+          />
+        </>
       )}
 
       {phase === "rollingEnemyAttack" && (

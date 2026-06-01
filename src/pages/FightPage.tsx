@@ -18,6 +18,7 @@ import DiceLoadoutCard from "../components/combat/DiceLoadoutCard";
 import ResultDiceRow from "../components/combat/ResultDiceRow";
 import DicePoolPreset from "../components/DicePoolPresets";
 import { rollDie } from "../services/diceService";
+import DiceIcon from "../components/DiceIcon";
 
 type Phase =
     | "selectEnemy"
@@ -557,6 +558,35 @@ export default function FightPage() {
                     <button className="attack-button" onClick={startPlayerAttack}>
                         Start Attack
                     </button>
+
+                    <div className="loadout-card">
+                        <h3>⚔️ Current Attack Loadout</h3>
+
+                        <div className="dice-badges">
+                            {Object.entries(playerAttackDice)
+                                .filter(([, count]) => count > 0)
+                                .map(([type, count]) => (
+                                    <div
+                                        key={type}
+                                        className={`dice-tile ${type.toLowerCase()}`}
+                                    >
+                                        <DiceIcon
+                                            type={type as any}
+                                            size={48}
+                                        />
+
+                                        <div className="dice-label">
+                                            {type}
+                                        </div>
+
+                                        <div className="dice-count">
+                                            × {count}
+                                        </div>
+                                    </div>
+                                ))}
+                        </div>
+                    </div>
+
 
                     <div className="card">
                         <h3>Attack Loadout</h3>
