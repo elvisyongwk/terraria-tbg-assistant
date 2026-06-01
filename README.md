@@ -1,73 +1,35 @@
-# React + TypeScript + Vite
+# Terraria: TBG - Assistant
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A free, client-side web application designed to assist players during games of **Terraria: TBG**, published by **Paper Fort Games**. 
 
-Currently, two official plugins are available:
+## 🚀 Current Features
+* **[Fight]** - e.g., Select and fight an enemy.
+* **[Enemy Attack]** - e.g., Select and defend against an enemy's attack.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🔧 Setup & Installation
+Since this is a client-side only React application, you can run it locally with ease:
 
-## React Compiler
+1. Clone the repository:
+   ```bash
+   git clone https://github.com
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Start the local development server:
+   ```bash
+   npm start
+   ```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## ⚖️ Legal Disclaimer & Copyright Notice
+This project is an unofficial, fan-made companion tool. 
 
-## Expanding the ESLint configuration
+* **No Copyright Infringement Intended:** This application is entirely non-commercial and created solely for educational and entertainment purposes to enhance the gameplay experience.
+* **Intellectual Property:** All game titles, mechanics, artwork, storylines, and trademarks associated with **Terraria: The Board Game** are the exclusive property of **Paper Fort Games** and **Re-Logic** and their respective designers. 
+* **Asset Use:** No official artwork or proprietary assets are hosted in this repository unless permitted under fair use guidelines for companion utilities.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+If you are the copyright holder and wish to have any specific content or this tool removed, please open an Issue or contact the maintainer directly.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
-
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📜 License
+This project is licensed under the **MIT License** - see the [LICENSE](LICENSE) file for details. You are free to modify and adapt the code, provided the original copyright disclaimers remain intact.
