@@ -167,16 +167,16 @@ export default function EnemyAttackFlow({
 
   return (
     <>
+      {phase === "idle" && (
+        <button className="attack-button" onClick={startEnemyAttack}>Start Enemy Attack</button>
+      )}
+
       {phase !== "viewingResults" && (
         <DiceLoadoutCard
           value={playerDefenseDice}
           onChange={onPlayerDefenseDiceChange}
           title="Defense Loadout"
         />
-      )}
-
-      {phase === "idle" && (
-        <button onClick={startEnemyAttack}>Start Enemy Attack</button>
       )}
 
       {phase === "rollingEnemyAttack" && (

@@ -7,8 +7,10 @@ import CombatTimeline from "../components/CombatTimeline";
 import RewardScreen from "../components/RewardScreen";
 
 import { useHistoryStore } from "../store/historyStore";
-import {  type DiceType } from "../types/Dice";
+import { type DiceType } from "../types/Dice";
 import type { Enemy } from "../types/Enemy";
+import type { DiceResult } from "../types/DiceResult";
+import { getDiceTotal } from "../types/DiceResult";
 import DiceRenderer from "../components/dice/DiceRenderer";
 import { useToast } from "../components/Toast";
 import DicePoolSelector from "../components/DicePoolSelector";
@@ -53,11 +55,11 @@ export default function FightPage() {
     const toast = useToast();
 
     function getSourceFromLabel(label: string, type?: CombatEvent["type"]): "player" | "enemy" | "system" {
-      const lower = label.toLowerCase();
-      if (lower.includes("player")) return "player";
-      if (lower.includes("enemy")) return "enemy";
-      if (type === "damage") return "player";
-      return "system";
+        const lower = label.toLowerCase();
+        if (lower.includes("player")) return "player";
+        if (lower.includes("enemy")) return "enemy";
+        if (type === "damage") return "player";
+        return "system";
     }
 
     const [phase, setPhase] = useState<Phase>("selectEnemy");
@@ -84,7 +86,7 @@ export default function FightPage() {
 
     const [events, setEvents] = useState<CombatEvent[]>([]);
 
-    const [lastRollValues, setLastRollValues] = useState<{ player: number[]; enemy: number[] }>({ player: [], enemy: [] });
+    const [lastRollValues, setLastRollValues] = useState<{ player: (number | DiceResult)[]; enemy: (number | DiceResult)[] }>({ player: [], enemy: [] });
     const [lastRollDiceTypes, setLastRollDiceTypes] = useState<{ player: DiceType[]; enemy: DiceType[] }>({ player: [], enemy: [] });
     const [enemyHpBeforeAttack, setEnemyHpBeforeAttack] = useState<number>(0);
     const [selectedResultDie, setSelectedResultDie] = useState<
@@ -142,6 +144,10 @@ export default function FightPage() {
 
         setEnemyHpBeforeAttack(enemyHp);
 
+        // Convert rolls to DiceResult objects
+        const playerResults: DiceResult[] = playerAttackRolls.map(roll => ({ value: roll, modifier: 0 }));
+        const enemyResults: DiceResult[] = enemyDefenseRolls.map(roll => ({ value: roll, modifier: 0 }));
+
         const threshold = Math.max(...enemyDefenseRolls);
         let damage = 0;
 
@@ -155,7 +161,7 @@ export default function FightPage() {
         setEnemyHp(newHp);
 
         log({ type: "roll", label: "Enemy Defense", values: enemyDefenseRolls });
-        setLastRollValues({ player: playerAttackRolls, enemy: enemyDefenseRolls });
+        setLastRollValues({ player: playerResults, enemy: enemyResults });
         setLastRollDiceTypes({
             player: expandDicePool(playerAttackDice),
             enemy: enemy.defenseDice,
@@ -167,17 +173,17 @@ export default function FightPage() {
         if (!enemy) return;
 
         // Recalculate damage based on reroll results
-        const threshold = Math.max(...lastRollValues.enemy);
+        const threshold = Math.max(...lastRollValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
         let newDamage = 0;
 
         for (const roll of lastRollValues.player) {
-            if (roll >= threshold) {
+            if (getDiceTotal(typeof roll === "number" ? { value: roll, modifier: 0 } : roll) >= threshold) {
                 newDamage++;
             }
         }
 
         // Calculate original damage
-        const originalThreshold = Math.max(...lastRollValues.enemy);
+        const originalThreshold = Math.max(...lastRollValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
         let originalDamage = 0;
 
         for (const roll of playerAttackRolls) {
@@ -194,7 +200,7 @@ export default function FightPage() {
         if (damageDifference !== 0) {
             const adjustedHp = Math.max(0, enemyHp - damageDifference);
             setEnemyHp(adjustedHp);
-            
+
             if (damageDifference > 0) {
                 log({ type: "damage", label: `Additional Damage (Reroll)`, value: damageDifference });
             } else if (damageDifference < 0) {
@@ -239,8 +245,11 @@ export default function FightPage() {
     function onRetaliationRollComplete(playerDefenseRolls: number[]) {
         if (!enemy) return;
 
+        // Convert rolls to DiceResult objects
+        const playerResults: DiceResult[] = playerDefenseRolls.map(roll => ({ value: roll, modifier: 0 }));
+
         const playerDefense = Math.max(...playerDefenseRolls);
-        const enemyAttack = Math.max(...lastRollValues.enemy);
+        const enemyAttack = Math.max(...lastRollValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
         const playerTakesDamage = playerDefense <= enemyAttack;
 
         log({
@@ -251,7 +260,7 @@ export default function FightPage() {
 
         setPlayerDefenseRolls(playerDefenseRolls);
         setPlayerTookRetaliationDamage(playerTakesDamage);
-        setLastRollValues({ player: playerDefenseRolls, enemy: lastRollValues.enemy });
+        setLastRollValues({ player: playerResults, enemy: lastRollValues.enemy });
         setLastRollDiceTypes({
             player: expandDicePool(playerDefenseDice),
             enemy:
@@ -266,22 +275,22 @@ export default function FightPage() {
         if (!enemy) return;
 
         // Recalculate defense based on reroll results
-        const newPlayerDefense = Math.max(...lastRollValues.player);
-        const enemyAttack = Math.max(...lastRollValues.enemy);
+        const newPlayerDefense = Math.max(...lastRollValues.player.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
+        const enemyAttack = Math.max(...lastRollValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
         const newPlayerTakesDamage = newPlayerDefense <= enemyAttack;
         const hadReroll = newPlayerTakesDamage !== playerTookRetaliationDamage;
 
         // Log outcome with appropriate label
         if (newPlayerTakesDamage) {
-            log({ 
-                type: "damage", 
-                label: `Player Takes Damage${hadReroll ? " (Reroll)" : ""}`, 
-                value: 1 
+            log({
+                type: "damage",
+                label: `Player Takes Damage${hadReroll ? " (Reroll)" : ""}`,
+                value: 1
             });
         } else {
-            log({ 
-                type: "state", 
-                label: `Player blocks retaliation${hadReroll ? " (Reroll)" : ""}` 
+            log({
+                type: "state",
+                label: `Player blocks retaliation${hadReroll ? " (Reroll)" : ""}`
             });
         }
 
@@ -330,24 +339,24 @@ export default function FightPage() {
     }, [phase]);
 
     function applyResultUpdates(nextValues: {
-        player: number[];
-        enemy: number[];
+        player: (number | DiceResult)[];
+        enemy: (number | DiceResult)[];
     }) {
         setLastRollValues(nextValues);
 
         if (phase === "viewingPlayerResults") {
-            setPlayerAttackRolls(nextValues.player);
+            setPlayerAttackRolls(nextValues.player.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
 
-            const threshold = Math.max(...nextValues.enemy);
-            const damage = nextValues.player.filter((roll) => roll >= threshold).length;
+            const threshold = Math.max(...nextValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
+            const damage = nextValues.player.filter((roll) => getDiceTotal(typeof roll === "number" ? { value: roll, modifier: 0 } : roll) >= threshold).length;
             setEnemyHp(Math.max(0, enemyHpBeforeAttack - damage));
         }
 
         if (phase === "viewingRetaliationResults") {
-            setPlayerDefenseRolls(nextValues.player);
+            setPlayerDefenseRolls(nextValues.player.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
 
-            const playerDefense = Math.max(...nextValues.player);
-            const enemyAttack = Math.max(...nextValues.enemy);
+            const playerDefense = Math.max(...nextValues.player.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
+            const enemyAttack = Math.max(...nextValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
             setPlayerTookRetaliationDamage(playerDefense <= enemyAttack);
         }
     }
@@ -355,7 +364,7 @@ export default function FightPage() {
     function updateResultDie(
         side: "player" | "enemy",
         index: number,
-        newValue: number,
+        newValue: number | DiceResult,
         action: "Reroll" | "Remove"
     ) {
         const updated = [...lastRollValues[side]];
@@ -385,20 +394,21 @@ export default function FightPage() {
     function logResultAction(
         side: "player" | "enemy",
         action: "Reroll" | "Remove",
-        nextValues: { player: number[]; enemy: number[] }
+        nextValues: { player: (number | DiceResult)[]; enemy: (number | DiceResult)[] }
     ) {
+        const displayValues = nextValues[side].map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v));
         const label = `${getResultLabel(side)} (${action})`;
-        log({ type: "roll", label, values: nextValues[side] });
+        log({ type: "roll", label, values: displayValues });
 
         if (phase === "viewingPlayerResults") {
-            const threshold = Math.max(...nextValues.enemy);
-            const damage = nextValues.player.filter((roll) => roll >= threshold).length;
+            const threshold = Math.max(...nextValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
+            const damage = nextValues.player.filter((roll) => getDiceTotal(typeof roll === "number" ? { value: roll, modifier: 0 } : roll) >= threshold).length;
             log({ type: "damage", label: `Damage Dealt (${action})`, value: damage });
         }
 
         if (phase === "viewingRetaliationResults") {
-            const playerDefense = Math.max(...nextValues.player);
-            const enemyAttack = Math.max(...nextValues.enemy);
+            const playerDefense = Math.max(...nextValues.player.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
+            const enemyAttack = Math.max(...nextValues.enemy.map(v => getDiceTotal(typeof v === "number" ? { value: v, modifier: 0 } : v)));
             const playerTakesDamage = playerDefense <= enemyAttack;
 
             if (playerTakesDamage) {
@@ -412,7 +422,10 @@ export default function FightPage() {
 
     function rerollResultDie(side: "player" | "enemy", index: number) {
         const type = lastRollDiceTypes[side][index] || "D4";
-        updateResultDie(side, index, rollDie(type), "Reroll");
+        const currentDie = lastRollValues[side][index];
+        const modifier = (typeof currentDie === "object" && "modifier" in currentDie) ? currentDie.modifier : 0;
+        const newResult: DiceResult = { value: rollDie(type), modifier };
+        updateResultDie(side, index, newResult, "Reroll");
     }
 
     function removeResultDie(side: "player" | "enemy", index: number) {
@@ -434,6 +447,30 @@ export default function FightPage() {
         logResultAction(side, "Remove", nextValues);
     }
 
+    function modifyResultDie(side: "player" | "enemy", index: number, modifierDelta: number) {
+        const updated = [...lastRollValues[side]];
+        const currentDie = updated[index];
+
+        if (typeof currentDie === "object" && "modifier" in currentDie) {
+            updated[index] = {
+                ...currentDie,
+                modifier: currentDie.modifier + modifierDelta,
+            };
+        } else {
+            updated[index] = {
+                value: typeof currentDie === "number" ? currentDie : 0,
+                modifier: modifierDelta,
+            };
+        }
+
+        const nextValues = {
+            ...lastRollValues,
+            [side]: updated,
+        };
+
+        applyResultUpdates(nextValues);
+    }
+
     // Result display is handled by shared ResultDiceRow component.
 
     /* ---------------- RENDER ---------------- */
@@ -441,14 +478,16 @@ export default function FightPage() {
     if (phase === "selectEnemy") {
         return (
             <div className="page">
-                <h1>Select Enemy</h1>
+                <h1>Fight</h1>
 
                 <button onClick={exitToSession}>
                     Return Home
                 </button>
 
+                <h3>Select Enemy</h3>
+
                 {(enemies as Enemy[]).map((e: Enemy) => (
-                    <button key={e.id} className="enemy-btn" onClick={() => selectEnemy(e)}>
+                    <button key={e.id} onClick={() => selectEnemy(e)}>
                         {e.name}
                     </button>
                 ))}
@@ -490,6 +529,7 @@ export default function FightPage() {
                     onClick={() =>
                         setPhase("playerAttack")
                     }
+                    className="attack-button"
                 >
                     Start Fight
                 </button>
@@ -511,24 +551,28 @@ export default function FightPage() {
 
             <EnemyHPBar hp={enemyHp} maxHp={maxHp} />
 
-            <CombatTimeline events={events} />
-
             {/* ---------------- PLAYER ATTACK ---------------- */}
             {phase === "playerAttack" && (
                 <>
+                    <button className="attack-button" onClick={startPlayerAttack}>
+                        Start Attack
+                    </button>
+
                     <div className="card">
                         <h3>Attack Loadout</h3>
+                        <span>These are pre-configured attack dice combinations.</span>
                         <DicePoolPreset onSelect={setPlayerAttackDice} />
                         <DicePoolSelector
                             value={playerAttackDice}
                             onChange={setPlayerAttackDice}
                         />
                     </div>
-
-                    <button onClick={startPlayerAttack}>
-                        Attack
-                    </button>
                 </>
+            )}
+
+
+            {events.length > 0 && (
+                <CombatTimeline events={events} />
             )}
 
             {phase === "rollingPlayer" && (
@@ -557,6 +601,7 @@ export default function FightPage() {
                         onSelect={setSelectedResultDie}
                         onReroll={rerollResultDie}
                         onRemove={removeResultDie}
+                        onModify={modifyResultDie}
                     />
                     <ResultDiceRow
                         title="Enemy Defense"
@@ -566,6 +611,7 @@ export default function FightPage() {
                         onSelect={setSelectedResultDie}
                         onReroll={rerollResultDie}
                         onRemove={removeResultDie}
+                        onModify={modifyResultDie}
                     />
                     <button onClick={continueFromPlayerResults}>
                         Resolve

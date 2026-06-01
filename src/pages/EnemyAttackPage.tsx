@@ -78,7 +78,7 @@ export default function EnemyAttackPage() {
         Return Home
       </button>
 
-      {selectedEnemy && <CombatTimeline events={events} />}
+      {selectedEnemy && events.length > 0 && <CombatTimeline events={events} />}
 
       {!selectedEnemy && (
         <div>
@@ -93,6 +93,11 @@ export default function EnemyAttackPage() {
 
       {selectedEnemy && (
         <div>
+          <button onClick={() => {
+            setSelectedEnemy(null);
+            setEvents([]);
+            setResultMessage(null);
+          }}>Choose another enemy</button>
           <h2>{selectedEnemy.name}</h2>
           <EnemyAttackFlow
             enemyAttackDice={selectedEnemy.attackDice}
@@ -101,12 +106,6 @@ export default function EnemyAttackPage() {
             onComplete={handleComplete}
             onLog={handleLog}
           />
-
-          <button onClick={() => {
-            setSelectedEnemy(null);
-            setEvents([]);
-            setResultMessage(null);
-          }}>Choose another enemy</button>
         </div>
       )}
 
