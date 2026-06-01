@@ -2,6 +2,9 @@
 
 A free, client-side web application designed to assist players during games of **Terraria: TBG**, published by **Paper Fort Games**. 
 
+This code is purely client side code without a server storing any data.
+Hosted on github: https://elvisyongwk.github.io/terraria-tbg-assistant
+
 ## 🚀 Current Features
 * **[Fight]** - e.g., Select and fight an enemy.
 * **[Enemy Attack]** - e.g., Select and defend against an enemy's attack.
