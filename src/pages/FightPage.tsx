@@ -146,7 +146,6 @@ export default function FightPage() {
         setEnemyHp(newHp);
 
         log({ type: "roll", label: "Enemy Defense", values: enemyDefenseRolls });
-        log({ type: "damage", label: "Damage Dealt", value: damage });
         setLastRollValues({ player: playerAttackRolls, enemy: enemyDefenseRolls });
         setLastRollDiceTypes({
             player: expandDicePool(playerAttackDice),
@@ -177,6 +176,9 @@ export default function FightPage() {
                 originalDamage++;
             }
         }
+
+        // Log initial damage on resolve
+        log({ type: "damage", label: "Damage Dealt", value: newDamage });
 
         // Adjust HP based on damage difference
         const damageDifference = newDamage - originalDamage;
@@ -238,12 +240,6 @@ export default function FightPage() {
             values: playerDefenseRolls,
         });
 
-        if (playerTakesDamage) {
-            log({ type: "damage", label: "Player Takes Damage", value: 1 });
-        } else {
-            log({ type: "state", label: "Player blocks retaliation" });
-        }
-
         setPlayerDefenseRolls(playerDefenseRolls);
         setPlayerTookRetaliationDamage(playerTakesDamage);
         setLastRollValues({ player: playerDefenseRolls, enemy: lastRollValues.enemy });
@@ -264,14 +260,20 @@ export default function FightPage() {
         const newPlayerDefense = Math.max(...lastRollValues.player);
         const enemyAttack = Math.max(...lastRollValues.enemy);
         const newPlayerTakesDamage = newPlayerDefense <= enemyAttack;
+        const hadReroll = newPlayerTakesDamage !== playerTookRetaliationDamage;
 
-        // Check if outcome changed
-        if (newPlayerTakesDamage !== playerTookRetaliationDamage) {
-            if (newPlayerTakesDamage) {
-                log({ type: "damage", label: "Player Takes Damage (Reroll)", value: 1 });
-            } else {
-                log({ type: "state", label: "Player blocks retaliation (Reroll)" });
-            }
+        // Log outcome with appropriate label
+        if (newPlayerTakesDamage) {
+            log({ 
+                type: "damage", 
+                label: `Player Takes Damage${hadReroll ? " (Reroll)" : ""}`, 
+                value: 1 
+            });
+        } else {
+            log({ 
+                type: "state", 
+                label: `Player blocks retaliation${hadReroll ? " (Reroll)" : ""}` 
+            });
         }
 
         addHistory({
