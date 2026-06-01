@@ -4,7 +4,7 @@
     "name": "Blue Slime",
     "hp": 2,
     "range": "short",
-    "attackDice": [],
+    "attackDice": ["D4"],
     "defenseDice": ["D4"],
     "rewards": ["slime_gel"]
   },
@@ -13,7 +13,7 @@
     "name": "Green Slime",
     "hp": 3,
     "range": "short",
-    "attackDice": [],
+    "attackDice": ["D4", "D4"],
     "defenseDice": ["D6"],
     "rewards": ["slime_gel"]
   },

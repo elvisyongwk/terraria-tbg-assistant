@@ -3,6 +3,7 @@ import {
   Routes,
   Route,
 } from "react-router-dom";
+import { ToastProvider } from "./components/Toast";
 
 import HomePage from "./pages/HomePage";
 import SessionPage from "./pages/SessionPage";
@@ -12,8 +13,9 @@ import HistoryPage from "./pages/HistoryPage";
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
         <Route
           path="/"
           element={<HomePage />}
@@ -40,8 +42,9 @@ function App() {
           path="/history"
           element={<HistoryPage />}
         />
-      </Routes>
-    </BrowserRouter>
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }
 

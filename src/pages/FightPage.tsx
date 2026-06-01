@@ -10,7 +10,10 @@ import { useSessionStore } from "../store/sessionStore";
 import {  type DiceType } from "../types/Dice";
 import type { Enemy } from "../types/Enemy";
 import DiceRenderer from "../components/dice/DiceRenderer";
+import { useToast } from "../components/Toast";
 import DicePoolSelector from "../components/DicePoolSelector";
+import DiceLoadoutCard from "../components/combat/DiceLoadoutCard";
+import ResultDiceRow from "../components/combat/ResultDiceRow";
 import DicePoolPreset from "../components/DicePoolPresets";
 import { rollDie } from "../services/diceService";
 
@@ -25,9 +28,6 @@ type Phase =
     | "selectRetaliationDefense"
     | "rollingRetaliation"
     | "viewingRetaliationResults"
-    | "enemyAttack"
-    | "rollingEnemyAttack"
-    | "viewingEnemyAttackResults"
     | "reward";
 
 type CombatEvent =
@@ -50,6 +50,7 @@ function expandDicePool(pool: Record<DiceType, number>): DiceType[] {
 export default function FightPage() {
     const addHistory = useSessionStore((s) => s.addHistory);
     const navigate = useNavigate();
+    const toast = useToast();
 
     const [phase, setPhase] = useState<Phase>("selectEnemy");
 
@@ -83,12 +84,22 @@ export default function FightPage() {
         | null
     >(null);
     const [playerAttackRolls, setPlayerAttackRolls] = useState<number[]>([]);
-    const [playerDefenseRolls, setPlayerDefenseRolls] = useState<number[]>([]);
+    const [_playerDefenseRolls, setPlayerDefenseRolls] = useState<number[]>([]);
     const [playerTookRetaliationDamage, setPlayerTookRetaliationDamage] = useState(false);
-    const [enemyAttackRolls, setEnemyAttackRolls] = useState<number[]>([]);
 
     function log(event: CombatEvent) {
         setEvents((prev) => [...prev, event]);
+        try {
+            if (event.type === "damage") {
+                toast.show(`${event.label}: ${event.value}`, "damage");
+            } else if (event.type === "roll") {
+                toast.show(`${event.label}: ${event.values.join(", ")}`, "roll");
+            } else if (event.type === "state") {
+                toast.show(event.label, "state");
+            }
+        } catch (e) {
+            // ignore if no provider
+        }
     }
 
     /* ---------------- ENEMY SELECT ---------------- */
@@ -146,6 +157,39 @@ export default function FightPage() {
 
     function continueFromPlayerResults() {
         if (!enemy) return;
+
+        // Recalculate damage based on reroll results
+        const threshold = Math.max(...lastRollValues.enemy);
+        let newDamage = 0;
+
+        for (const roll of lastRollValues.player) {
+            if (roll >= threshold) {
+                newDamage++;
+            }
+        }
+
+        // Calculate original damage
+        const originalThreshold = Math.max(...lastRollValues.enemy);
+        let originalDamage = 0;
+
+        for (const roll of playerAttackRolls) {
+            if (roll >= originalThreshold) {
+                originalDamage++;
+            }
+        }
+
+        // Adjust HP based on damage difference
+        const damageDifference = newDamage - originalDamage;
+        if (damageDifference !== 0) {
+            const adjustedHp = Math.max(0, enemyHp - damageDifference);
+            setEnemyHp(adjustedHp);
+            
+            if (damageDifference > 0) {
+                log({ type: "damage", label: `Additional Damage (Reroll)`, value: damageDifference });
+            } else if (damageDifference < 0) {
+                log({ type: "state", label: `Damage Reduced (Reroll)` });
+            }
+        }
 
         if (enemyHp <= 0) {
             addHistory({
@@ -216,6 +260,20 @@ export default function FightPage() {
     function continueFromRetaliationResults() {
         if (!enemy) return;
 
+        // Recalculate defense based on reroll results
+        const newPlayerDefense = Math.max(...lastRollValues.player);
+        const enemyAttack = Math.max(...lastRollValues.enemy);
+        const newPlayerTakesDamage = newPlayerDefense <= enemyAttack;
+
+        // Check if outcome changed
+        if (newPlayerTakesDamage !== playerTookRetaliationDamage) {
+            if (newPlayerTakesDamage) {
+                log({ type: "damage", label: "Player Takes Damage (Reroll)", value: 1 });
+            } else {
+                log({ type: "state", label: "Player blocks retaliation (Reroll)" });
+            }
+        }
+
         addHistory({
             id: crypto.randomUUID(),
             timestamp: new Date().toISOString(),
@@ -224,7 +282,7 @@ export default function FightPage() {
             damageDealt: 0,
             enemyKilled: false,
             enemyRetaliated: true,
-            playerDamaged: playerTookRetaliationDamage,
+            playerDamaged: newPlayerTakesDamage,
         });
 
         setPhase("reward");
@@ -232,50 +290,6 @@ export default function FightPage() {
 
     /* ---------------- ENEMY ATTACK MODE ---------------- */
 
-    function onEnemyAttackRollComplete(enemyAttackRolls: number[]) {
-        if (!enemy) return;
-
-        log({
-            type: "roll",
-            label: "Enemy Attack Rolls",
-            values: enemyAttackRolls,
-        });
-
-        setEnemyAttackRolls(enemyAttackRolls);
-        setPhase("rollingEnemyAttack");
-    }
-
-    function onEnemyAttackComplete(playerDefenseRolls: number[]) {
-        if (!enemy) return;
-
-        const playerDefense = Math.max(...playerDefenseRolls);
-        const enemyAttack = Math.max(...enemyAttackRolls);
-        const playerTakesDamage = enemyAttack > playerDefense;
-
-        log({
-            type: "roll",
-            label: "Player Defense",
-            values: playerDefenseRolls,
-        });
-
-        if (playerTakesDamage) {
-            log({ type: "damage", label: "Player Takes Damage", value: 1 });
-        } else {
-            log({ type: "state", label: "Attack blocked" });
-        }
-
-        setPlayerDefenseRolls(playerDefenseRolls);
-        setLastRollValues({ player: playerDefenseRolls, enemy: enemyAttackRolls });
-        setLastRollDiceTypes({
-            player: expandDicePool(playerDefenseDice),
-            enemy: enemy.attackDice,
-        });
-        setPhase("viewingEnemyAttackResults");
-    }
-
-    function continueFromEnemyAttackResults() {
-        setPhase("reward");
-    }
 
     function resetFight() {
         setEnemy(null);
@@ -298,8 +312,7 @@ export default function FightPage() {
     useEffect(() => {
         if (
             phase !== "viewingPlayerResults" &&
-            phase !== "viewingRetaliationResults" &&
-            phase !== "viewingEnemyAttackResults"
+            phase !== "viewingRetaliationResults"
         ) {
             setSelectedResultDie(null);
         }
@@ -325,11 +338,6 @@ export default function FightPage() {
             const playerDefense = Math.max(...nextValues.player);
             const enemyAttack = Math.max(...nextValues.enemy);
             setPlayerTookRetaliationDamage(playerDefense <= enemyAttack);
-        }
-
-        if (phase === "viewingEnemyAttackResults") {
-            setPlayerDefenseRolls(nextValues.player);
-            setEnemyAttackRolls(nextValues.enemy);
         }
     }
 
@@ -357,10 +365,6 @@ export default function FightPage() {
         }
 
         if (phase === "viewingRetaliationResults") {
-            return side === "player" ? "Player Defense" : "Enemy Attack";
-        }
-
-        if (phase === "viewingEnemyAttackResults") {
             return side === "player" ? "Player Defense" : "Enemy Attack";
         }
 
@@ -393,17 +397,6 @@ export default function FightPage() {
             }
         }
 
-        if (phase === "viewingEnemyAttackResults") {
-            const playerDefense = Math.max(...nextValues.player);
-            const enemyAttack = Math.max(...nextValues.enemy);
-            const playerTakesDamage = enemyAttack > playerDefense;
-
-            if (playerTakesDamage) {
-                log({ type: "damage", label: `Player Takes Damage (${action})`, value: 1 });
-            } else {
-                log({ type: "state", label: `Attack blocked (${action})` });
-            }
-        }
     }
 
     function rerollResultDie(side: "player" | "enemy", index: number) {
@@ -430,52 +423,7 @@ export default function FightPage() {
         logResultAction(side, "Remove", nextValues);
     }
 
-    function renderResultDiceRow(
-        title: string,
-        side: "player" | "enemy",
-        values: number[]
-    ) {
-        return (
-            <div className="dice-roll">
-                <h3>{title}</h3>
-                <div className="dice-row">
-                    {values.map((value, index) => (
-                        <button
-                            key={index}
-                            type="button"
-                            className={`die ${side}-die ${
-                                selectedResultDie?.side === side &&
-                                selectedResultDie.index === index
-                                    ? "selected"
-                                    : ""
-                            }`}
-                            onClick={() => setSelectedResultDie({ side, index })}
-                        >
-                            {value}
-                        </button>
-                    ))}
-                </div>
-
-                {selectedResultDie?.side === side &&
-                    selectedResultDie.index < values.length && (
-                        <div className="dice-actions">
-                            <button
-                                type="button"
-                                onClick={() => rerollResultDie(side, selectedResultDie.index)}
-                            >
-                                Reroll
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => removeResultDie(side, selectedResultDie.index)}
-                            >
-                                Remove
-                            </button>
-                        </div>
-                    )}
-            </div>
-        );
-    }
+    // Result display is handled by shared ResultDiceRow component.
 
     /* ---------------- RENDER ---------------- */
 
@@ -586,10 +534,26 @@ export default function FightPage() {
 
             {phase === "viewingPlayerResults" && (
                 <>
-                    {renderResultDiceRow("Player Attack", "player", lastRollValues.player)}
-                    {renderResultDiceRow("Enemy Defense", "enemy", lastRollValues.enemy)}
+                    <ResultDiceRow
+                        title="Player Attack"
+                        side="player"
+                        values={lastRollValues.player}
+                        selectedResultDie={selectedResultDie}
+                        onSelect={setSelectedResultDie}
+                        onReroll={rerollResultDie}
+                        onRemove={removeResultDie}
+                    />
+                    <ResultDiceRow
+                        title="Enemy Defense"
+                        side="enemy"
+                        values={lastRollValues.enemy}
+                        selectedResultDie={selectedResultDie}
+                        onSelect={setSelectedResultDie}
+                        onReroll={rerollResultDie}
+                        onRemove={removeResultDie}
+                    />
                     <button onClick={continueFromPlayerResults}>
-                        Continue
+                        Resolve
                     </button>
                 </>
             )}
@@ -611,13 +575,11 @@ export default function FightPage() {
 
             {phase === "selectRetaliationDefense" && (
                 <>
-                    <div className="card">
-                        <h3>Defense Loadout</h3>
-                        <DicePoolSelector
-                            value={playerDefenseDice}
-                            onChange={setPlayerDefenseDice}
-                        />
-                    </div>
+                    <DiceLoadoutCard
+                        value={playerDefenseDice}
+                        onChange={setPlayerDefenseDice}
+                        title="Defense Loadout"
+                    />
                     <button onClick={() => setPhase("rollingRetaliation")}>Roll Defense</button>
                 </>
             )}
@@ -633,37 +595,26 @@ export default function FightPage() {
 
             {phase === "viewingRetaliationResults" && (
                 <>
-                    {renderResultDiceRow("Player Defense", "player", lastRollValues.player)}
-                    {renderResultDiceRow("Enemy Attack", "enemy", lastRollValues.enemy)}
+                    <ResultDiceRow
+                        title="Player Defense"
+                        side="player"
+                        values={lastRollValues.player}
+                        selectedResultDie={selectedResultDie}
+                        onSelect={setSelectedResultDie}
+                        onReroll={rerollResultDie}
+                        onRemove={removeResultDie}
+                    />
+                    <ResultDiceRow
+                        title="Enemy Attack"
+                        side="enemy"
+                        values={lastRollValues.enemy}
+                        selectedResultDie={selectedResultDie}
+                        onSelect={setSelectedResultDie}
+                        onReroll={rerollResultDie}
+                        onRemove={removeResultDie}
+                    />
                     <button onClick={continueFromRetaliationResults}>
-                        Continue
-                    </button>
-                </>
-            )}
-
-            {/* ---------------- ENEMY ATTACK ---------------- */}
-            {phase === "enemyAttack" && (
-                <DiceRenderer
-                    dice={enemy?.attackDice || []}
-                    onComplete={onEnemyAttackRollComplete}
-                    role="enemy"
-                />
-            )}
-
-            {phase === "rollingEnemyAttack" && (
-                <DiceRenderer
-                    dice={expandDicePool(playerDefenseDice)}
-                    onComplete={onEnemyAttackComplete}
-                    role="player"
-                />
-            )}
-
-            {phase === "viewingEnemyAttackResults" && (
-                <>
-                    {renderResultDiceRow("Player Defense", "player", lastRollValues.player)}
-                    {renderResultDiceRow("Enemy Attack", "enemy", lastRollValues.enemy)}
-                    <button onClick={continueFromEnemyAttackResults}>
-                        Continue
+                        Resolve
                     </button>
                 </>
             )}

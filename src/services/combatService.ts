@@ -50,7 +50,7 @@ export function resolveRetaliation(
   const playerDefense = Math.max(...playerDefenseRolls);
 
   const playerTakesDamage =
-    enemyAttack > playerDefense;
+    enemyAttack >= playerDefense;
 
   return {
     enemyRolls,
@@ -77,7 +77,7 @@ export function resolveEnemyAttack(
   const playerDefense = Math.max(...playerDefenseRolls);
 
   const playerTakesDamage =
-    enemyAttack > playerDefense;
+    enemyAttack >= playerDefense;
 
   return {
     enemyRolls,
