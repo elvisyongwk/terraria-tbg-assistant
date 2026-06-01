@@ -1,13 +1,23 @@
+import { useNavigate } from "react-router-dom";
 import { useSessionStore } from "../store/sessionStore";
 
 export default function HistoryPage() {
   const history = useSessionStore(
     (s) => s.history
   );
+  const navigate = useNavigate();
+
+  function returnToSession() {
+    navigate("/session");
+  }
 
   return (
     <div className="page">
       <h1>Session History</h1>
+
+      <button onClick={returnToSession}>
+        Return to Session
+      </button>
 
       {history.length === 0 && (
         <p>No fights yet.</p>

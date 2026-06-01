@@ -434,15 +434,15 @@ export default function FightPage() {
             <div className="page">
                 <h1>Select Enemy</h1>
 
+                <button onClick={exitToSession}>
+                    Return to Session
+                </button>
+
                 {(enemies as Enemy[]).map((e: Enemy) => (
                     <button key={e.id} className="enemy-btn" onClick={() => selectEnemy(e)}>
                         {e.name}
                     </button>
                 ))}
-
-                <button onClick={exitToSession}>
-                    Return to Session
-                </button>
             </div>
         );
     }
@@ -451,6 +451,10 @@ export default function FightPage() {
         return (
             <div className="page">
                 <h1>{enemy.name}</h1>
+
+                <button onClick={exitToSession}>
+                    Return to Session
+                </button>
 
                 <div className="card">
                     <p className="label">Max HP</p>
@@ -482,10 +486,6 @@ export default function FightPage() {
                 </button>
 
                 <button onClick={() => setPhase("selectEnemy")}>Choose another enemy</button>
-
-                <button onClick={exitToSession}>
-                    Return to Session
-                </button>
             </div>
         );
     }
@@ -495,6 +495,10 @@ export default function FightPage() {
     return (
         <div className="page">
             <h1>{enemy.name}</h1>
+
+            <button onClick={exitToSession}>
+                Return to Session
+            </button>
 
             <EnemyHPBar hp={enemyHp} maxHp={maxHp} />
 
@@ -630,10 +634,6 @@ export default function FightPage() {
                     />
                 </>
             )}
-
-            <button onClick={exitToSession}>
-                Return to Session
-            </button>
         </div>
     );
 }

@@ -62,7 +62,14 @@ export default function EnemyAttackPage() {
 
       <h1>Enemy Attack</h1>
 
-      <CombatTimeline events={events} />
+      <button onClick={() => {
+        setResultMessage(null);
+        navigate("/session");
+      }}>
+        Return to Session
+      </button>
+
+      {selectedEnemy && <CombatTimeline events={events} />}
 
       {!selectedEnemy && (
         <div>
@@ -95,11 +102,6 @@ export default function EnemyAttackPage() {
       )}
 
       {resultMessage && <p>{resultMessage}</p>}
-
-      <button onClick={() => {
-        setResultMessage(null);
-        navigate("/session");
-      }}>Return to Session</button>
     </div>
   );
 }
