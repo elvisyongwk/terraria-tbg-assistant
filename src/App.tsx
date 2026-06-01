@@ -14,7 +14,7 @@ import HistoryPage from "./pages/HistoryPage";
 function App() {
   return (
     <ToastProvider>
-      <BrowserRouter>
+      <BrowserRouter basename="/terraria-tbg-assistant">
         <Routes>
           <Route path="/" element={<Navigate to="/home" replace />} />
           <Route path="/home" element={<HomePage />} />
