@@ -1,22 +1,22 @@
 import { useNavigate } from "react-router-dom";
-import { useSessionStore } from "../store/sessionStore";
+import { useHistoryStore } from "../store/historyStore";
 
 export default function HistoryPage() {
-  const history = useSessionStore(
+  const history = useHistoryStore(
     (s) => s.history
   );
   const navigate = useNavigate();
 
   function returnToSession() {
-    navigate("/session");
+    navigate("/home");
   }
 
   return (
     <div className="page">
-      <h1>Session History</h1>
+      <h1>History</h1>
 
       <button onClick={returnToSession}>
-        Return to Session
+        Return Home
       </button>
 
       {history.length === 0 && (

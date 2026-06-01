@@ -6,7 +6,7 @@ import EnemyHPBar from "../components/EnemyHPBar";
 import CombatTimeline from "../components/CombatTimeline";
 import RewardScreen from "../components/RewardScreen";
 
-import { useSessionStore } from "../store/sessionStore";
+import { useHistoryStore } from "../store/historyStore";
 import {  type DiceType } from "../types/Dice";
 import type { Enemy } from "../types/Enemy";
 import DiceRenderer from "../components/dice/DiceRenderer";
@@ -48,7 +48,7 @@ function expandDicePool(pool: Record<DiceType, number>): DiceType[] {
 }
 
 export default function FightPage() {
-    const addHistory = useSessionStore((s) => s.addHistory);
+    const addHistory = useHistoryStore((s) => s.addHistory);
     const navigate = useNavigate();
     const toast = useToast();
 
@@ -308,7 +308,7 @@ export default function FightPage() {
         setEvents([]);
         setPhase("selectEnemy");
 
-        navigate("/session");
+        navigate("/home");
     }
 
     useEffect(() => {
@@ -435,7 +435,7 @@ export default function FightPage() {
                 <h1>Select Enemy</h1>
 
                 <button onClick={exitToSession}>
-                    Return to Session
+                    Return Home
                 </button>
 
                 {(enemies as Enemy[]).map((e: Enemy) => (
@@ -453,7 +453,7 @@ export default function FightPage() {
                 <h1>{enemy.name}</h1>
 
                 <button onClick={exitToSession}>
-                    Return to Session
+                    Return Home
                 </button>
 
                 <div className="card">
@@ -497,7 +497,7 @@ export default function FightPage() {
             <h1>{enemy.name}</h1>
 
             <button onClick={exitToSession}>
-                Return to Session
+                Return Home
             </button>
 
             <EnemyHPBar hp={enemyHp} maxHp={maxHp} />

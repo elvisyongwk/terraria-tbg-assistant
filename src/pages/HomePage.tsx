@@ -1,29 +1,19 @@
 import { useNavigate } from "react-router-dom";
-import { useSessionStore } from "../store/sessionStore";
 import { useSettingsStore } from "../store/settingsStore";
 
 export default function HomePage() {
   const navigate = useNavigate();
-
-  const createSession =
-    useSessionStore(
-      (s) => s.createSession
-    );
-
-  const handleCreate = () => {
-    createSession();
-    navigate("/session");
-  };
-
   const { diceMode, setDiceMode } = useSettingsStore();
 
   return (
     <div className="page">
-      <h1>Board Game Session</h1>
+      <h1>Terraria TBG Helper</h1>
 
-      <button onClick={handleCreate}>
-        Create Session
-      </button>
+      <div className="button-row">
+        <button onClick={() => navigate("/fight")}>Fight</button>
+        <button onClick={() => navigate("/enemy-attack")}>Enemy Attack</button>
+        <button onClick={() => navigate("/history")}>History</button>
+      </div>
 
       <div className="card">
         <h3>Dice Mode</h3>

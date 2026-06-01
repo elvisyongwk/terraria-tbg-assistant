@@ -64,9 +64,9 @@ export default function EnemyAttackPage() {
 
       <button onClick={() => {
         setResultMessage(null);
-        navigate("/session");
+        navigate("/home");
       }}>
-        Return to Session
+        Return Home
       </button>
 
       {selectedEnemy && <CombatTimeline events={events} />}
