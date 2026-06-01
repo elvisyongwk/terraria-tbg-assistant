@@ -4,14 +4,9 @@
     "name": "Slime Gel",
     "description": "Crafting Material"
   },
-  "gold_pouch": {
-    "id": "gold_pouch",
-    "name": "Gold Pouch",
-    "description": "Gain 10 Gold"
-  },
-  "orc_trophy": {
-    "id": "orc_trophy",
-    "name": "Orc Trophy",
-    "description": "Quest Item"
+  "gold_coin": {
+    "id": "gold_coin",
+    "name": "Gold Coin",
+    "description": "Currency"
   }
 }

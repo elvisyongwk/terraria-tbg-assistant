@@ -41,10 +41,12 @@ export default function HistoryPage() {
               : "No"}
           </p>
 
-          {h.rewards && (
+          {h.rewards && h.rewards.length > 0 && (
             <p>
               Rewards:{" "}
-              {h.rewards.join(", ")}
+              {h.rewards
+                .map((r) => `${r.id} × ${r.quantity}`)
+                .join(", ")}
             </p>
           )}
 

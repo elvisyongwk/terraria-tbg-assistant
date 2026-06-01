@@ -1,3 +1,5 @@
+import type { RewardDrop } from "./RewardDrop";
+
 export interface FightHistory {
   id: string;
 
@@ -15,5 +17,5 @@ export interface FightHistory {
 
   playerDamaged: boolean;
 
-  rewards?: string[];
+  rewards?: RewardDrop[];
 }

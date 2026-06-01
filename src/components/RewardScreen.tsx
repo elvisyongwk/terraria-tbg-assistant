@@ -1,10 +1,11 @@
 import rewardsData from "../data/rewards.json";
+import type { RewardDrop } from "../types/RewardDrop";
 
 export default function RewardScreen({
   rewards,
   onContinue,
 }: {
-  rewards: string[];
+  rewards: RewardDrop[];
   onContinue: () => void;
 }) {
   return (
@@ -15,14 +16,30 @@ export default function RewardScreen({
         <p>No rewards</p>
       ) : (
         <ul>
-          {rewards.map((id) => {
-            const r =
-              rewardsData[id as keyof typeof rewardsData];
+          {rewards.map((reward) => {
+            const rewardInfo =
+              rewardsData[
+                reward.id as keyof typeof rewardsData
+              ];
+
+            if (!rewardInfo) {
+              return (
+                <li key={reward.id}>
+                  Unknown Reward ({reward.id}) ×{" "}
+                  {reward.quantity}
+                </li>
+              );
+            }
 
             return (
-              <li key={id}>
-                <strong>{r.name}</strong>
-                <p>{r.description}</p>
+              <li key={reward.id}>
+                <strong>
+                  {rewardInfo.name}
+                  {" × "}
+                  {reward.quantity}
+                </strong>
+
+                <p>{rewardInfo.description}</p>
               </li>
             );
           })}
