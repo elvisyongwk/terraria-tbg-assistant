@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import enemies from "../data/enemies.json";
 
@@ -7,11 +7,12 @@ import CombatTimeline from "../components/CombatTimeline";
 import RewardScreen from "../components/RewardScreen";
 
 import { useSessionStore } from "../store/sessionStore";
-import type { DiceType } from "../types/Dice";
+import {  type DiceType } from "../types/Dice";
 import type { Enemy } from "../types/Enemy";
 import DiceRenderer from "../components/dice/DiceRenderer";
 import DicePoolSelector from "../components/DicePoolSelector";
 import DicePoolPreset from "../components/DicePoolPresets";
+import { rollDie } from "../services/diceService";
 
 type Phase =
     | "selectEnemy"
@@ -75,6 +76,12 @@ export default function FightPage() {
     const [events, setEvents] = useState<CombatEvent[]>([]);
 
     const [lastRollValues, setLastRollValues] = useState<{ player: number[]; enemy: number[] }>({ player: [], enemy: [] });
+    const [lastRollDiceTypes, setLastRollDiceTypes] = useState<{ player: DiceType[]; enemy: DiceType[] }>({ player: [], enemy: [] });
+    const [enemyHpBeforeAttack, setEnemyHpBeforeAttack] = useState<number>(0);
+    const [selectedResultDie, setSelectedResultDie] = useState<
+        | { side: "player" | "enemy"; index: number }
+        | null
+    >(null);
     const [playerAttackRolls, setPlayerAttackRolls] = useState<number[]>([]);
     const [playerDefenseRolls, setPlayerDefenseRolls] = useState<number[]>([]);
     const [playerTookRetaliationDamage, setPlayerTookRetaliationDamage] = useState(false);
@@ -113,6 +120,8 @@ export default function FightPage() {
     function onEnemyDefenseRollComplete(enemyDefenseRolls: number[]) {
         if (!enemy) return;
 
+        setEnemyHpBeforeAttack(enemyHp);
+
         const threshold = Math.max(...enemyDefenseRolls);
         let damage = 0;
 
@@ -128,6 +137,10 @@ export default function FightPage() {
         log({ type: "roll", label: "Enemy Defense", values: enemyDefenseRolls });
         log({ type: "damage", label: "Damage Dealt", value: damage });
         setLastRollValues({ player: playerAttackRolls, enemy: enemyDefenseRolls });
+        setLastRollDiceTypes({
+            player: expandDicePool(playerAttackDice),
+            enemy: enemy.defenseDice,
+        });
         setPhase("viewingPlayerResults");
     }
 
@@ -190,6 +203,13 @@ export default function FightPage() {
         setPlayerDefenseRolls(playerDefenseRolls);
         setPlayerTookRetaliationDamage(playerTakesDamage);
         setLastRollValues({ player: playerDefenseRolls, enemy: lastRollValues.enemy });
+        setLastRollDiceTypes({
+            player: expandDicePool(playerDefenseDice),
+            enemy:
+                lastRollDiceTypes.enemy.length > 0
+                    ? lastRollDiceTypes.enemy
+                    : enemy.defenseDice,
+        });
         setPhase("viewingRetaliationResults");
     }
 
@@ -246,6 +266,10 @@ export default function FightPage() {
 
         setPlayerDefenseRolls(playerDefenseRolls);
         setLastRollValues({ player: playerDefenseRolls, enemy: enemyAttackRolls });
+        setLastRollDiceTypes({
+            player: expandDicePool(playerDefenseDice),
+            enemy: enemy.attackDice,
+        });
         setPhase("viewingEnemyAttackResults");
     }
 
@@ -269,6 +293,188 @@ export default function FightPage() {
         setPhase("selectEnemy");
 
         navigate("/session");
+    }
+
+    useEffect(() => {
+        if (
+            phase !== "viewingPlayerResults" &&
+            phase !== "viewingRetaliationResults" &&
+            phase !== "viewingEnemyAttackResults"
+        ) {
+            setSelectedResultDie(null);
+        }
+    }, [phase]);
+
+    function applyResultUpdates(nextValues: {
+        player: number[];
+        enemy: number[];
+    }) {
+        setLastRollValues(nextValues);
+
+        if (phase === "viewingPlayerResults") {
+            setPlayerAttackRolls(nextValues.player);
+
+            const threshold = Math.max(...nextValues.enemy);
+            const damage = nextValues.player.filter((roll) => roll >= threshold).length;
+            setEnemyHp(Math.max(0, enemyHpBeforeAttack - damage));
+        }
+
+        if (phase === "viewingRetaliationResults") {
+            setPlayerDefenseRolls(nextValues.player);
+
+            const playerDefense = Math.max(...nextValues.player);
+            const enemyAttack = Math.max(...nextValues.enemy);
+            setPlayerTookRetaliationDamage(playerDefense <= enemyAttack);
+        }
+
+        if (phase === "viewingEnemyAttackResults") {
+            setPlayerDefenseRolls(nextValues.player);
+            setEnemyAttackRolls(nextValues.enemy);
+        }
+    }
+
+    function updateResultDie(
+        side: "player" | "enemy",
+        index: number,
+        newValue: number,
+        action: "Reroll" | "Remove"
+    ) {
+        const updated = [...lastRollValues[side]];
+        updated[index] = newValue;
+
+        const nextValues = {
+            ...lastRollValues,
+            [side]: updated,
+        };
+
+        applyResultUpdates(nextValues);
+        logResultAction(side, action, nextValues);
+    }
+
+    function getResultLabel(side: "player" | "enemy") {
+        if (phase === "viewingPlayerResults") {
+            return side === "player" ? "Player Attack" : "Enemy Defense";
+        }
+
+        if (phase === "viewingRetaliationResults") {
+            return side === "player" ? "Player Defense" : "Enemy Attack";
+        }
+
+        if (phase === "viewingEnemyAttackResults") {
+            return side === "player" ? "Player Defense" : "Enemy Attack";
+        }
+
+        return side === "player" ? "Player" : "Enemy";
+    }
+
+    function logResultAction(
+        side: "player" | "enemy",
+        action: "Reroll" | "Remove",
+        nextValues: { player: number[]; enemy: number[] }
+    ) {
+        const label = `${getResultLabel(side)} (${action})`;
+        log({ type: "roll", label, values: nextValues[side] });
+
+        if (phase === "viewingPlayerResults") {
+            const threshold = Math.max(...nextValues.enemy);
+            const damage = nextValues.player.filter((roll) => roll >= threshold).length;
+            log({ type: "damage", label: `Damage Dealt (${action})`, value: damage });
+        }
+
+        if (phase === "viewingRetaliationResults") {
+            const playerDefense = Math.max(...nextValues.player);
+            const enemyAttack = Math.max(...nextValues.enemy);
+            const playerTakesDamage = playerDefense <= enemyAttack;
+
+            if (playerTakesDamage) {
+                log({ type: "damage", label: `Player Takes Damage (${action})`, value: 1 });
+            } else {
+                log({ type: "state", label: `Player blocks retaliation (${action})` });
+            }
+        }
+
+        if (phase === "viewingEnemyAttackResults") {
+            const playerDefense = Math.max(...nextValues.player);
+            const enemyAttack = Math.max(...nextValues.enemy);
+            const playerTakesDamage = enemyAttack > playerDefense;
+
+            if (playerTakesDamage) {
+                log({ type: "damage", label: `Player Takes Damage (${action})`, value: 1 });
+            } else {
+                log({ type: "state", label: `Attack blocked (${action})` });
+            }
+        }
+    }
+
+    function rerollResultDie(side: "player" | "enemy", index: number) {
+        const type = lastRollDiceTypes[side][index] || "D4";
+        updateResultDie(side, index, rollDie(type), "Reroll");
+    }
+
+    function removeResultDie(side: "player" | "enemy", index: number) {
+        const updatedValues = lastRollValues[side].filter((_, i) => i !== index);
+        const updatedTypes = lastRollDiceTypes[side].filter((_, i) => i !== index);
+
+        const nextValues = {
+            ...lastRollValues,
+            [side]: updatedValues,
+        };
+
+        setLastRollDiceTypes({
+            ...lastRollDiceTypes,
+            [side]: updatedTypes,
+        });
+
+        applyResultUpdates(nextValues);
+        setSelectedResultDie(null);
+        logResultAction(side, "Remove", nextValues);
+    }
+
+    function renderResultDiceRow(
+        title: string,
+        side: "player" | "enemy",
+        values: number[]
+    ) {
+        return (
+            <div className="dice-roll">
+                <h3>{title}</h3>
+                <div className="dice-row">
+                    {values.map((value, index) => (
+                        <button
+                            key={index}
+                            type="button"
+                            className={`die ${side}-die ${
+                                selectedResultDie?.side === side &&
+                                selectedResultDie.index === index
+                                    ? "selected"
+                                    : ""
+                            }`}
+                            onClick={() => setSelectedResultDie({ side, index })}
+                        >
+                            {value}
+                        </button>
+                    ))}
+                </div>
+
+                {selectedResultDie?.side === side &&
+                    selectedResultDie.index < values.length && (
+                        <div className="dice-actions">
+                            <button
+                                type="button"
+                                onClick={() => rerollResultDie(side, selectedResultDie.index)}
+                            >
+                                Reroll
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => removeResultDie(side, selectedResultDie.index)}
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    )}
+            </div>
+        );
     }
 
     /* ---------------- RENDER ---------------- */
@@ -380,26 +586,8 @@ export default function FightPage() {
 
             {phase === "viewingPlayerResults" && (
                 <>
-                    <div className="dice-roll">
-                        <h3>Player Attack</h3>
-                        <div className="dice-row">
-                            {lastRollValues.player.map((v, i) => (
-                                <div key={i} className="die player-die">
-                                    {v}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="dice-roll">
-                        <h3>Enemy Defense</h3>
-                        <div className="dice-row">
-                            {lastRollValues.enemy.map((v, i) => (
-                                <div key={i} className="die enemy-die">
-                                    {v}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {renderResultDiceRow("Player Attack", "player", lastRollValues.player)}
+                    {renderResultDiceRow("Enemy Defense", "enemy", lastRollValues.enemy)}
                     <button onClick={continueFromPlayerResults}>
                         Continue
                     </button>
@@ -445,26 +633,8 @@ export default function FightPage() {
 
             {phase === "viewingRetaliationResults" && (
                 <>
-                    <div className="dice-roll">
-                        <h3>Player Defense</h3>
-                        <div className="dice-row">
-                            {lastRollValues.player.map((v, i) => (
-                                <div key={i} className="die player-die">
-                                    {v}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="dice-roll">
-                        <h3>Enemy Attack</h3>
-                        <div className="dice-row">
-                            {lastRollValues.enemy.map((v, i) => (
-                                <div key={i} className="die enemy-die">
-                                    {v}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {renderResultDiceRow("Player Defense", "player", lastRollValues.player)}
+                    {renderResultDiceRow("Enemy Attack", "enemy", lastRollValues.enemy)}
                     <button onClick={continueFromRetaliationResults}>
                         Continue
                     </button>
@@ -490,26 +660,8 @@ export default function FightPage() {
 
             {phase === "viewingEnemyAttackResults" && (
                 <>
-                    <div className="dice-roll">
-                        <h3>Player Defense</h3>
-                        <div className="dice-row">
-                            {lastRollValues.player.map((v, i) => (
-                                <div key={i} className="die player-die">
-                                    {v}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="dice-roll">
-                        <h3>Enemy Attack</h3>
-                        <div className="dice-row">
-                            {lastRollValues.enemy.map((v, i) => (
-                                <div key={i} className="die enemy-die">
-                                    {v}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+                    {renderResultDiceRow("Player Defense", "player", lastRollValues.player)}
+                    {renderResultDiceRow("Enemy Attack", "enemy", lastRollValues.enemy)}
                     <button onClick={continueFromEnemyAttackResults}>
                         Continue
                     </button>
